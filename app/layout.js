@@ -10,7 +10,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         {children}
-        <footer>Co-Created with ❤️ with a special friend.</footer>
+        <footer>Co-Created with ❤️ with a special friends.</footer>
       </body>
     </html>
   );
