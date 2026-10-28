@@ -21,6 +21,7 @@ export default function Home() {
   const [category, setCategory] = useState(categories[0]);
   const [count, setCount] = useState("5");
   const [ideas, setIdeas] = useState([]);
+  const [recentTitles, setRecentTitles] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,10 +47,33 @@ export default function Home() {
         );
       }
 
-      const cleanTopic = String(topic || "").slice(0, 200).trim() || "anything";
+      const rawTopic = String(topic || "").slice(0, 200).trim();
       const cleanCategory = String(category || "General").slice(0, 50);
       const parsedCount = Number.parseInt(count, 10) || 5;
       const cleanCount = Math.min(Math.max(parsedCount, 1), 10);
+
+      const avoidClause =
+        recentTitles.length > 0
+          ? `\nDo NOT repeat or closely resemble these previous ideas: ${recentTitles.join(", ")}.`
+          : "";
+      const randomSeed = Math.floor(Math.random() * 1_000_000_000);
+
+      const creativeAngles = [
+        "unconventional and bold",
+        "practical and immediately actionable",
+        "futuristic and forward-thinking",
+        "niche and hyper-specific",
+        "playful and unexpected",
+        "minimalist and clever",
+        "community-driven and collaborative",
+        "contrarian and thought-provoking",
+      ];
+      const chosenAngle =
+        creativeAngles[Math.floor(Math.random() * creativeAngles.length)];
+
+      const topicPrompt = rawTopic
+        ? `about: "${rawTopic}"`
+        : "across wildly diverse, unexpected domains (pick a different surprising domain for each idea)";
 
       const response = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -61,17 +85,19 @@ export default function Home() {
           },
           body: JSON.stringify({
             model: GROQ_MODEL,
-            temperature: 1,
+            temperature: 1.1,
+            top_p: 0.95,
+            seed: randomSeed,
             response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",
                 content:
-                  'You are a creative idea generator. Reply ONLY with JSON: {"ideas":[{"title":string,"description":string}]}. Descriptions are 1-2 sentences.',
+                  'You are a wildly creative, original idea generator. Never give cliché or generic stock answers. Reply ONLY with valid JSON: {"ideas":[{"title":string,"description":string}]}. Descriptions must be 1-2 sentences.',
               },
               {
                 role: "user",
-                content: `Generate ${cleanCount} original ${cleanCategory} ideas about: ${cleanTopic}`,
+                content: `Generate ${cleanCount} fresh, original ${cleanCategory} ideas ${topicPrompt}.\nCreative lens: ${chosenAngle}.${avoidClause}\n(Variation seed: ${randomSeed})`,
               },
             ],
           }),
@@ -84,7 +110,11 @@ export default function Home() {
       }
 
       const parsed = JSON.parse(result.choices[0].message.content);
-      setIdeas(parsed.ideas || []);
+      const nextIdeas = parsed.ideas || [];
+      setIdeas(nextIdeas);
+      setRecentTitles((prev) =>
+        [...prev, ...nextIdeas.map((item) => item.title).filter(Boolean)].slice(-30)
+      );
     } catch (requestError) {
       setError(requestError.message);
     } finally {
