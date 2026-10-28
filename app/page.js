@@ -71,9 +71,14 @@ export default function Home() {
       const chosenAngle =
         creativeAngles[Math.floor(Math.random() * creativeAngles.length)];
 
+      const themeStyle =
+        theme === "blue"
+          ? "masculine-oriented (tailored to masculine interests, aesthetics, themes, and perspectives)"
+          : "feminine-oriented (tailored to feminine interests, aesthetics, themes, and perspectives)";
+
       const topicPrompt = rawTopic
         ? `about: "${rawTopic}"`
-        : "across wildly diverse, unexpected domains (pick a different surprising domain for each idea)";
+        : `across wildly diverse, unexpected ${theme === "blue" ? "masculine" : "feminine"} domains (pick a different surprising domain for each idea)`;
 
       const response = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -93,11 +98,11 @@ export default function Home() {
               {
                 role: "system",
                 content:
-                  'You are a wildly creative, original idea generator. Never give cliché or generic stock answers. Reply ONLY with valid JSON: {"ideas":[{"title":string,"description":string}]}. Descriptions must be 1-2 sentences.',
+                  `You are a wildly creative, original idea generator. Generate ideas that are distinctly ${themeStyle}. Never give cliché or generic stock answers. Reply ONLY with valid JSON: {"ideas":[{"title":string,"description":string}]}. Descriptions must be 1-2 sentences.`,
               },
               {
                 role: "user",
-                content: `Generate ${cleanCount} fresh, original ${cleanCategory} ideas ${topicPrompt}.\nCreative lens: ${chosenAngle}.${avoidClause}\n(Variation seed: ${randomSeed})`,
+                content: `Generate ${cleanCount} fresh, original ${theme === "blue" ? "masculine-type" : "feminine-type"} ${cleanCategory} ideas ${topicPrompt}.\nTheme vibe: ${themeStyle}.\nCreative lens: ${chosenAngle}.${avoidClause}\n(Variation seed: ${randomSeed})`,
               },
             ],
           }),
